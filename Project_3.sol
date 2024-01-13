@@ -1,47 +1,33 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.20;
 
-contract TR_Token {
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-    string public token_name;
-    string public token_symbol;
-    uint256 public totalsupply;
-    mapping(address => uint256) public balance;
-    address public owner;
-    uint public max_mintable;
+contract ERC20_Token is ERC20, Ownable {
 
-    modifier onlyOwner() {
-        require(msg.sender == owner, "You are not the owner");
-        _;
-    }
-    constructor() {
-        token_name = "TARUN";
-        token_symbol = "TR";
-        totalsupply = 100;
-        max_mintable = 2000;
-        owner = msg.sender;
+    uint public maxMintable;
+
+   constructor() ERC20("TARUN", "TR") Ownable(msg.sender) {
+    _mint(msg.sender, 100 * 5 ** decimals());
+    maxMintable = 2000 * 5 ** decimals();
+}
+
+    function Token_mint(address to, uint256 amount) external onlyOwner {
+        require(to != address(0), "Address not found");
+        require(amount <= maxMintable, "Increase supply");
+        _mint(to, amount);
+        maxMintable -= amount;
     }
 
-    function mint_Token(address to, uint256 amount) public onlyOwner {
-        require(to != address(0), "Error");
-        require(amount < max_mintable, "Exceed the maximum supply");
-        totalsupply += amount;
-        balance[to] += amount;
-        max_mintable -= amount;
+    function Token_burn(uint256 amount) external {
+        _burn(msg.sender, amount);
+        maxMintable += amount;
     }
 
-    function burn_Token(uint256 amount) public {
-        require(balance[msg.sender] >= amount, "Insufficient Balance");
-        totalsupply -= amount;
-        balance[msg.sender] -= amount;
-        max_mintable += amount;
-    }
-
-    function transfer_Token(address to, uint256 amount) public returns (bool) {
-        require(to != address(0), "Error");
-        require(balance[msg.sender] >= amount, "Insufficient balance");
-        balance[msg.sender] -= amount;
-        balance[to] += amount;
+    function Token_transfer(address to, uint256 amount) public  returns (bool) {
+        require(to != address(0), "Insufficient Address");
+        _transfer(msg.sender, to, amount);
         return true;
     }
 }
